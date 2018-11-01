@@ -6,7 +6,7 @@ import os
 r_dict = {}
 
 categories = {
-    'fork': ['ban', 'fork', 'fork_and_knife'],
+    'fork': ['fork', 'fork_and_knife'],
     'fire': ['+1', 'fire', 'fireball', 'notbad', '+1::skin-tone-2', 'joy', '+1::skin-tone-6', 'heavy_plus_sign'],
     'galera': ['galera', 'eww', 'facepalm', 'noexcel', 'chains', 'wat', 'hankey', 'nor', 'rowing_galera', 'good-enough',
                'are_you_fucking_kidding_me'],

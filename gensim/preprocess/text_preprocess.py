@@ -1,12 +1,13 @@
 import gensim
 from nltk.corpus import stopwords
 from nltk.stem.lancaster import *
-from nltk.stem.snowball import RussianStemmer
+from nltk.stem.snowball import RussianStemmer, EnglishStemmer
 from scipy import sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-stop_words = stopwords.words('russian')
+stop_words_ru = stopwords.words('russian')
 
+stop_words_eng = stopwords.words('english')
 
 def topic_list_from_binarized(binarized, topics):
     return [topic for (has, topic) in zip(binarized, topics) if has == 1]
@@ -88,11 +89,11 @@ def compact_whitespace(string):
     return re.sub(r'\s+', ' ', string)
 
 
-def stem(string, stemmer):
+def stem(string, stemmer, stop_words):
     return ' '.join([stemmer.stem(word) for word in re.split(' ', string) if not word in stop_words])
 
 
-def lemmatize(string, lemmatizer):
+def lemmatize(string, lemmatizer, stop_words):
     return ' '.join([lemmatizer.lemmatize(word) for word in re.split(' ', string) if not word in stop_words])
 
 
@@ -100,12 +101,15 @@ def pre_process(string):
     s = lower_case(string)
     s = fix_lt(s)
     s = strip_punctuation(s)
-    s = remove_stop_words(s, stop_words)
+    s = remove_stop_words(s, stop_words_ru)
+    s = remove_stop_words(s, stop_words_eng)
     s = compact_whitespace(s)
     min, max = extract_salary(s)
     s = replace_numeric_with_literal(s)
     stemmer = RussianStemmer()
-    s = stem(s, stemmer)
+    s = stem(s, stemmer, stop_words_ru)
+    stemmer = EnglishStemmer()
+    s = stem(s, stemmer, stop_words_eng)
     return [s.strip(), min, max]
 
 
