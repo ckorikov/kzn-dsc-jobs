@@ -43,6 +43,43 @@ def remove_stop_words(string, stop_words):
     return ' '.join([word for word in re.split(' ', string) if not word in stop_words])
 
 
+def extract_salary(string):
+    min = 1000000
+    max = 0
+    pattern = re.compile(r'\d{3,8}к')
+    if pattern.findall(string):
+        for els in pattern.findall(string):
+            st = els[:-1]
+            val = int(st) * 1000
+            if val < min:
+                min = val
+            if val > max:
+                max = val
+
+    pattern = re.compile(r'\d{3,8} тыс')
+    if pattern.findall(string):
+        for els in pattern.findall(string):
+            st = els[:-4]
+            val = int(st) * 1000
+            if val < min:
+                min = val
+            if val > max:
+                max = val
+    pattern = re.compile(r'\d{3,8} usd')
+    if pattern.findall(string):
+        for els in pattern.findall(string):
+            st = els[:-4]
+            val = int(st) * 70
+            if val < min:
+                min = val
+            if val > max:
+                max = val
+
+    if min > max:
+        min = max
+    return min, max
+
+
 def replace_numeric_with_literal(string, literal='<num> '):
     return re.sub(r'([0-9]+ ?)+', literal, string)
 
@@ -60,16 +97,16 @@ def lemmatize(string, lemmatizer):
 
 
 def pre_process(string):
-    s = string
     s = lower_case(string)
     s = fix_lt(s)
     s = strip_punctuation(s)
-    #s = remove_stop_words(s, stop_words)
-    #s = compact_whitespace(s)
-    #s = replace_numeric_with_literal(s)
+    s = remove_stop_words(s, stop_words)
+    s = compact_whitespace(s)
+    min, max = extract_salary(s)
+    s = replace_numeric_with_literal(s)
     stemmer = RussianStemmer()
     s = stem(s, stemmer)
-    return s.strip()
+    return [s.strip(), min, max]
 
 
 def pre_process_df(df):
@@ -133,3 +170,22 @@ def add_lda(X_train, X_test, vectorizer):
     X_train_with_topics = with_topics(X_train, lda)
     X_test_with_topics = with_topics(X_test, lda)
     return X_train_with_topics, X_test_with_topics
+
+
+def contains_word(str, w):
+    if w.lower() in str:
+        return 1
+    return 0
+
+
+def extract_words(df, words):
+    df['text'] = df.text.apply(pre_process_lite)
+    for word in words:
+        df[word] = df.text.apply(lambda s: contains_word(s, word))
+    return df[words].values
+
+def pre_process_lite(string):
+    s = lower_case(string)
+    s = fix_lt(s)
+    s = strip_punctuation(s)
+    return s

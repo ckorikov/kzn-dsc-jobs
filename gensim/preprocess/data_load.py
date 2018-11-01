@@ -5,6 +5,15 @@ import os
 
 r_dict = {}
 
+categories = {
+    'fork': ['ban', 'fork', 'fork_and_knife'],
+    'fire': ['+1', 'fire', 'fireball', 'notbad', '+1::skin-tone-2', 'joy', '+1::skin-tone-6', 'heavy_plus_sign'],
+    'galera': ['galera', 'eww', 'facepalm', 'noexcel', 'chains', 'wat', 'hankey', 'nor', 'rowing_galera', 'good-enough',
+               'are_you_fucking_kidding_me'],
+    'corporate': ['sberbank', 'putin', 'tinkoff', 'venheads', 'gref', 'putout', 'yandex'],
+    'money': ['moneybag', 'moneys', 'money_mouth_face']
+}
+
 
 def read_json(path):
     with open(path, encoding="utf-8") as f:
@@ -19,17 +28,20 @@ def fill_r_dict(d):
         r_dict[key] = r_dict[key] + value
 
 
-def extract_react(c, d):
-    if c not in d:
-        return 0
-    return 1
-
+def extract_category(cats, d):
+    for c in cats:
+        if c not in d:
+            continue
+        if d[c] > 1:
+            return 1
+    return 0
 
 def topic_list_from_binarized(binarized, all_topics):
     return [topic for (has, topic) in zip(binarized, all_topics) if has == 1]
 
 
-def load_dataframe(react_size=15):
+def load_dataframe(indx):
+    react_size = 50
     dataset = read_json('dataset.json')
     dataset = np.array(dataset)
 
@@ -40,8 +52,9 @@ def load_dataframe(react_size=15):
     all_topics = [r[0] for r in reacts]
     df = pd.DataFrame()
     df['text'] = [d['text'] for d in dataset]
-    for c in all_topics:
-        df['react.' + c] = [extract_react(c, r) for r in reactions]
+    cats = list(categories.keys())[indx:indx+1]
+    for cat_key in cats:
+        df[cat_key] = [extract_category(categories[cat_key], r) for r in reactions]
 
     print('\n', 'num topics:', len(all_topics))
     pd.DataFrame(all_topics, columns=['topic name']).head(15)
@@ -52,4 +65,4 @@ def load_dataframe(react_size=15):
     df = df.assign(topic_list=topic_lists)
     df = df.assign(topics_binarized=topics_binarized.tolist())
     df = df.assign(num_topics=np.array([len(lst) for lst in topic_lists]))
-    return df, all_topics
+    return df, cats
