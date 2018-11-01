@@ -12,6 +12,7 @@ import pickle
 import string
 
 from nltk.stem.snowball import EnglishStemmer, RussianStemmer
+from nltk.corpus import stopwords
 
 from app import ReactionPredictor
 
