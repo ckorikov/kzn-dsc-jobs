@@ -12,7 +12,9 @@ from preprocess.data_load import load_dataframe
 from preprocess.text_preprocess import vectorize, add_lda, pre_process_both, extract_words
 
 import warnings
+
 warnings.filterwarnings("ignore")
+
 
 def split_test_train(df):
     df_test = df[df.index > 600]
@@ -36,7 +38,7 @@ def score(y_test, predict, predict_proba, verbose=True):
         if y_test.shape[1] == 1:
             acc = accuracy_score(y_test, predict)
         else:
-            acc = accuracy_score(y_test[:,i], predict[:,i])
+            acc = accuracy_score(y_test[:, i], predict[:, i])
         if verbose:
             print(str(i) + ", accur: " + str(acc))
     if verbose:
@@ -126,6 +128,15 @@ def b_opt():
 
 if __name__ == '__main__':
     # bo = b_opt()
+    categories = {
+        'fork': ['fork', 'fork_and_knife'],
+        'fire': ['+1', 'fire', 'fireball', 'notbad', '+1::skin-tone-2', 'joy', '+1::skin-tone-6', 'good-enough',
+                 'heavy_plus_sign'],
+        'eww': ['eww', 'facepalm', 'noexcel', 'wat', 'hankey', 'nor', 'are_you_fucking_kidding_me'],
+        'galera': ['galera', 'chains', 'rowing_galera'],
+        'corporate': ['sberbank', 'putin', 'tinkoff', 'venheads', 'gref', 'putout', 'yandex'],
+        'money': ['moneybag', 'moneys', 'money_mouth_face']
+    }
 
     words = ['вилк', 'зарплат', 'fork', 'money', 'деньг', 'sber', 'сбер', 'tinkoff', 'тиньк', 'X5',
              'retail', 'group', 'mail', 'больш', 'данн', 'big', 'data', 'middle', 'миддл', 'джун', 'juniо',
@@ -139,8 +150,8 @@ if __name__ == '__main__':
              'карьерн', 'рост', 'аналит', 'продукт', 'сегмент', 'скорин', 'прогноз', 'отток', 'кредит', 'банк', 'A/B',
              'пространств', 'врем', 'ряд', 'фрод', 'tensorflow', 'theano', 'caffe', 'нейросет', 'keros', 'xgboost', 'R',
              'python', 'numpy', 'pandas', 'matplot', 'scikit', 'Tableau']
-    for i in range(0, 4):
-        df, topics = load_dataframe(i)
+    for cat_keykey, cat_vals in categories.items():
+        df = load_dataframe(cat_keykey, cat_vals)
         df_train, df_test = split_test_train(df)
         train_w = extract_words(df_train, words)
         test_w = extract_words(df_test, words)
@@ -160,18 +171,18 @@ if __name__ == '__main__':
         y_test, y_train, binarizer = get_target(df_train, df_test)
         X_t_train = np.hstack((train_w, pp_tr_min, pp_tr_max, X_t_train))
         X_t_test = np.hstack((test_w, pp_ts_min, pp_ts_max, X_t_test))
-        #clf1 = fit_rfc(train_w, test_w, y_train, y_test)
+        # clf1 = fit_rfc(train_w, test_w, y_train, y_test)
         clf = fit_log_reg(X_t_train, X_t_test, y_train, y_test)
         top_features = []
 
         num_top_features = 30  # min(10, clf.coef_.shape[0])
-        cols = words + ['min salary'] + ['max salary'] + vectorizer.get_feature_names() + ["lda"]*300
+        cols = words + ['min salary'] + ['max salary'] + vectorizer.get_feature_names() + ["lda"] * 300
         top_features = pd.DataFrame.from_records(
             columns=['topic', 'top_words'],
             data=[(
                 cls,
                 [cols[i] for i in np.argpartition(coefs, -num_top_features)[-num_top_features:]]
-            ) for cls, coefs in zip(topics, clf.coef_[:len(clf.classes_)])]
+            ) for cls, coefs in zip(cat_vals, clf.coef_[:len(clf.classes_)])]
         )
         for row in top_features.values:
             print("Topic: ", row[0])
