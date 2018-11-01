@@ -5,14 +5,6 @@ import os
 
 r_dict = {}
 
-categories = {
-    'fork': ['fork', 'fork_and_knife'],
-    'fire': ['+1', 'fire', 'fireball', 'notbad', '+1::skin-tone-2', 'joy', '+1::skin-tone-6', 'heavy_plus_sign'],
-    'galera': ['galera', 'eww', 'facepalm', 'noexcel', 'chains', 'wat', 'hankey', 'nor', 'rowing_galera', 'good-enough',
-               'are_you_fucking_kidding_me'],
-    'corporate': ['sberbank', 'putin', 'tinkoff', 'venheads', 'gref', 'putout', 'yandex'],
-    'money': ['moneybag', 'moneys', 'money_mouth_face']
-}
 
 
 def read_json(path):
@@ -40,7 +32,7 @@ def topic_list_from_binarized(binarized, all_topics):
     return [topic for (has, topic) in zip(binarized, all_topics) if has == 1]
 
 
-def load_dataframe(indx):
+def load_dataframe(cat_key, cat_vals):
     react_size = 50
     dataset = read_json('dataset.json')
     dataset = np.array(dataset)
@@ -52,9 +44,8 @@ def load_dataframe(indx):
     all_topics = [r[0] for r in reacts]
     df = pd.DataFrame()
     df['text'] = [d['text'] for d in dataset]
-    cats = list(categories.keys())[indx:indx+1]
-    for cat_key in cats:
-        df[cat_key] = [extract_category(categories[cat_key], r) for r in reactions]
+
+    df[cat_key] = [extract_category(cat_vals, r) for r in reactions]
 
     print('\n', 'num topics:', len(all_topics))
     pd.DataFrame(all_topics, columns=['topic name']).head(15)
@@ -65,4 +56,4 @@ def load_dataframe(indx):
     df = df.assign(topic_list=topic_lists)
     df = df.assign(topics_binarized=topics_binarized.tolist())
     df = df.assign(num_topics=np.array([len(lst) for lst in topic_lists]))
-    return df, cats
+    return df
