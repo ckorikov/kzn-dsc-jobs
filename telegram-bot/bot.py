@@ -1,15 +1,8 @@
-"""Simple Bot to reply to Telegram messages.
-This program is dedicated to the public domain under the CC0 license.
-This Bot uses the Updater class to handle the bot.
-First, a few handler functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Basic Echobot example, repeats messages.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
+"""
+Project: kzn-dsc-jobs
 """
 
+import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 import re
@@ -76,9 +69,9 @@ def error(bot, update, error):
 
 
 def main():
-    """Start the bot."""
+    token = sys.argv[1] if len(sys.argv) > 1 else None
     # Create the EventHandler and pass it your bot's token.
-    updater = Updater("Enter your api key")
+    updater = Updater(token)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
