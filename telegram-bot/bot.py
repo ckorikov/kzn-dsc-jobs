@@ -52,7 +52,7 @@ def echo(bot, update):
 
     reacts = rp.predict(update.message.text)
     for react in reacts:
-        bot.send_photo(chat_id=update.message.chat_id, photo=open('img/thinking.png', 'rb'))
+        bot.send_photo(chat_id=update.message.chat_id, photo=open('img/' + str(react), 'rb'))
 
 def process_text(text):
     formatted_text = perform_transformation(text)
