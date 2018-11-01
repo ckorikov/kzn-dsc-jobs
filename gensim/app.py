@@ -11,6 +11,8 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from preprocess.data_load import load_dataframe
 from preprocess.text_preprocess import vectorize, add_lda, pre_process_both, extract_words
 
+import warnings
+warnings.filterwarnings("ignore")
 
 def split_test_train(df):
     df_test = df[df.index > 600]
@@ -162,7 +164,7 @@ if __name__ == '__main__':
         clf = fit_log_reg(X_t_train, X_t_test, y_train, y_test)
         top_features = []
 
-        num_top_features = 10  # min(10, clf.coef_.shape[0])
+        num_top_features = 30  # min(10, clf.coef_.shape[0])
         cols = words + ['min salary'] + ['max salary'] + vectorizer.get_feature_names() + ["lda"]*300
         top_features = pd.DataFrame.from_records(
             columns=['topic', 'top_words'],
