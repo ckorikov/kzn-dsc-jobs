@@ -14,6 +14,8 @@ import string
 from nltk.stem.snowball import EnglishStemmer, RussianStemmer
 from nltk.corpus import stopwords
 
+from textgenrnn import textgenrnn
+
 from app import ReactionPredictor
 
 
@@ -30,6 +32,9 @@ logger = logging.getLogger(__name__)
 rp = pickle.load( open( "reaction_predictor.p", "rb" ) )
 models = pickle.load( open( "models.p", "rb" ) )
 tfidfs = pickle.load( open( "tfidfs.p", "rb" ) )
+
+textgen = textgenrnn('./textgenrnn_weights.hdf5')
+
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
 def start(bot, update):
@@ -55,7 +60,7 @@ def echo(bot, update):
     for react in reacts:
         update.message.reply_text(react)
 
-    update.message.reply_text(update.message.text)
+    update.message.reply_text(textgen.generate(prefix=update.message.text[:10]))
 
 def process_text(text):
     formatted_text = perform_transformation(text)
