@@ -12,6 +12,7 @@ import pickle
 import string
 
 from nltk.stem.snowball import EnglishStemmer, RussianStemmer
+from nltk.corpus import stopwords
 
 from app import ReactionPredictor
 
@@ -69,8 +70,9 @@ def perform_transformation(text):
     words_without_punctuation = text.split()
     # 3. Stem words
     stemmed_words = [eng_stemmer.stem(ru_stemmer.stem(word)) for word in words_without_punctuation]
+    filtered_words = [word for word in stemmed_words if word not in stopwords.words('russian')]
 
-    return ' '.join(stemmed_words)
+    return ' '.join(filtered_words)
 
 def error(bot, update, error):
     """Log Errors caused by Updates."""
