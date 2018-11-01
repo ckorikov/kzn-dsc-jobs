@@ -4,6 +4,7 @@ Project: kzn-dsc-jobs
 
 import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
 import logging
 import re
 import numpy as np
@@ -11,6 +12,9 @@ import pickle
 import string
 
 from nltk.stem.snowball import EnglishStemmer, RussianStemmer
+
+from app import ReactionPredictor
+
 
 ru_stemmer = RussianStemmer()
 eng_stemmer = EnglishStemmer()
@@ -22,6 +26,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
+rp = pickle.load( open( "reaction_predictor.p", "rb" ) )
 models = pickle.load( open( "models.p", "rb" ) )
 tfidfs = pickle.load( open( "tfidfs.p", "rb" ) )
 # Define a few command handlers. These usually take the two arguments bot and
@@ -39,10 +44,17 @@ def help(bot, update):
 def echo(bot, update):
     """Echo the user message."""
     # update.message.reply_text(update.message.text)
+    print(update.message.text)
     if process_text(update.message.text):
         update.message.reply_text('👎')
     else:
         update.message.reply_text('👍')
+
+    reacts = rp.predict(update.message.text)
+    for react in reacts:
+        update.message.reply_text(react)
+
+    update.message.reply_text(update.message.text)
 
 def process_text(text):
     formatted_text = perform_transformation(text)

@@ -1,17 +1,17 @@
+import warnings
+
 import numpy as np
 import pandas as pd
-from bayes_opt import BayesianOptimization
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import hamming_loss, log_loss, accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
-
+import pickle
 from preprocess.data_load import load_dataframe
-from preprocess.text_preprocess import vectorize, add_lda, pre_process_both, extract_words
-
-import warnings
+from preprocess.text_preprocess import extract_words, pre_process_df, \
+    vectorize_tr, with_topics, add_lda_train
 
 warnings.filterwarnings("ignore")
 
@@ -20,6 +20,13 @@ def split_test_train(df):
     df_test = df[df.index > 600]
     df_train = df[df.index <= 600]
     return df_train, df_test
+
+
+def get_target_train(df_train):
+    binarizer = MultiLabelBinarizer()
+    y_train = df_train.topic_list
+    y_train = binarizer.fit_transform(y_train)
+    return y_train, binarizer
 
 
 def get_target(df_train, df_test):
@@ -82,61 +89,21 @@ def fit_log_reg(X_train, X_test, y_train, y_test):
     return est
 
 
-# df, topics = load_dataframe(5)
-# df_train, df_test = split_test_train(df)
-# pp_train, pp_test = pre_process_both(df_train, df_test)
-# X_train, X_test, vectorizer = vectorize(pp_train, pp_test)
-# X_t_train, X_t_test = add_lda(X_train, X_test, vectorizer)
-# y_test, y_train, binarizer = get_target(df_train, df_test)
+import random
 
 
-def train_evaluate(C):
-    if X_t_train.shape[1] != X_t_test.shape[1]:
-        return -100
-    est = LogisticRegression(multi_class='multinomial', solver='lbfgs', C=C)
-    est = OneVsRestClassifier(est)
-    est.fit(X_t_train, y_train)
-    pred = est.predict(X_t_test)
-    pred_proba = est.predict_proba(X_t_test)
-    return score(y_test, pred, pred_proba, verbose=True)
-
-
-def get_params():
-    return {
-        "C": (0.1, 1)
-    }
-
-
-def b_opt():
-    num_rounds = 3000
-    random_state = 2016
-    num_iter = 25
-    init_points = 5
-    params = {
-        'eta': 0.1,
-        'silent': 1,
-        'eval_metric': 'mae',
-        'verbose_eval': True,
-        'seed': random_state
-    }
-
-    xgbBO = BayesianOptimization(train_evaluate, get_params())
-
-    xgbBO.maximize(init_points=init_points, n_iter=num_iter)
-    return xgbBO
-
-
-if __name__ == '__main__':
-    # bo = b_opt()
+class ReactionPredictor:
     categories = {
         'fork': ['fork', 'fork_and_knife'],
-        'fire': ['+1', 'fire', 'fireball', 'notbad', '+1::skin-tone-2', 'joy', '+1::skin-tone-6', 'good-enough',
+        'fire': ['fire', '+1', 'fireball', 'notbad', '+1::skin-tone-2', 'joy', '+1::skin-tone-6', 'good-enough',
                  'heavy_plus_sign'],
         'eww': ['eww', 'facepalm', 'noexcel', 'wat', 'hankey', 'nor', 'are_you_fucking_kidding_me'],
         'galera': ['galera', 'chains', 'rowing_galera'],
         'corporate': ['sberbank', 'putin', 'tinkoff', 'venheads', 'gref', 'putout', 'yandex'],
         'money': ['moneybag', 'moneys', 'money_mouth_face']
     }
+
+    thinking_cats = [':thinking_face:', ':thinking_alot:', ':confusedparrot:']
 
     words = ['вилк', 'зарплат', 'fork', 'money', 'деньг', 'sber', 'сбер', 'tinkoff', 'тиньк', 'X5',
              'retail', 'group', 'mail', 'больш', 'данн', 'big', 'data', 'middle', 'миддл', 'джун', 'juniо',
@@ -150,41 +117,82 @@ if __name__ == '__main__':
              'карьерн', 'рост', 'аналит', 'продукт', 'сегмент', 'скорин', 'прогноз', 'отток', 'кредит', 'банк', 'A/B',
              'пространств', 'врем', 'ряд', 'фрод', 'tensorflow', 'theano', 'caffe', 'нейросет', 'keros', 'xgboost', 'R',
              'python', 'numpy', 'pandas', 'matplot', 'scikit', 'Tableau']
-    for cat_keykey, cat_vals in categories.items():
-        df = load_dataframe(cat_keykey, cat_vals)
-        df_train, df_test = split_test_train(df)
-        train_w = extract_words(df_train, words)
-        test_w = extract_words(df_test, words)
-        pp_train, pp_test = pre_process_both(df_train, df_test)
-        pp_tr_t = np.array([p[0] for p in pp_train])
-        train_size = pp_tr_t.shape[0]
-        pp_tr_min = np.array([p[1] for p in pp_train]).reshape(train_size, 1)
-        pp_tr_max = np.array([p[2] for p in pp_train]).reshape(train_size, 1)
 
-        pp_ts_t = np.array([p[0] for p in pp_test])
-        test_size = pp_ts_t.shape[0]
-        pp_ts_min = np.array([p[1] for p in pp_test]).reshape(test_size, 1)
-        pp_ts_max = np.array([p[2] for p in pp_test]).reshape(test_size, 1)
+    def __init__(self):
+        self.models = {}
+        self.vectorizers = {}
+        self.lda_models = {}
+        self.top_words = {}
 
-        X_train, X_test, vectorizer = vectorize(pp_tr_t, pp_ts_t)
-        X_t_train, X_t_test = add_lda(X_train, X_test, vectorizer)
-        y_test, y_train, binarizer = get_target(df_train, df_test)
-        X_t_train = np.hstack((train_w, pp_tr_min, pp_tr_max, X_t_train))
-        X_t_test = np.hstack((test_w, pp_ts_min, pp_ts_max, X_t_test))
-        # clf1 = fit_rfc(train_w, test_w, y_train, y_test)
-        clf = fit_log_reg(X_t_train, X_t_test, y_train, y_test)
-        top_features = []
+    def fit(self):
+        for cat_key, cat_vals in self.categories.items():
+            df = load_dataframe(cat_key, cat_vals)
+            train_w = extract_words(df, self.words)
+            pp_train = pre_process_df(df)
+            pp_tr_t = np.array([p[0] for p in pp_train])
+            train_size = pp_tr_t.shape[0]
+            pp_tr_min = np.array([p[1] for p in pp_train]).reshape(train_size, 1)
+            pp_tr_max = np.array([p[2] for p in pp_train]).reshape(train_size, 1)
 
-        num_top_features = 30  # min(10, clf.coef_.shape[0])
-        cols = words + ['min salary'] + ['max salary'] + vectorizer.get_feature_names() + ["lda"] * 300
-        top_features = pd.DataFrame.from_records(
-            columns=['topic', 'top_words'],
-            data=[(
-                cls,
-                [cols[i] for i in np.argpartition(coefs, -num_top_features)[-num_top_features:]]
-            ) for cls, coefs in zip(cat_vals, clf.coef_[:len(clf.classes_)])]
-        )
-        for row in top_features.values:
-            print("Topic: ", row[0])
-            print("Values: ", row[1])
-            print("-----------------------------------------------")
+            X_train, vectorizer = vectorize_tr(pp_tr_t)
+            y_train, binarizer = get_target_train(df)
+            # X_train, lda_model = add_lda_train(X_train, vectorizer)
+            X_train = np.hstack((train_w, pp_tr_min, pp_tr_max, X_train.toarray()))
+            clf = LogisticRegression(multi_class='multinomial', solver='lbfgs', C=0.1)
+            clf.fit(X_train, y_train)
+
+            num_top_features = 30
+            cols = self.words + ['min salary'] + ['max salary'] + vectorizer.get_feature_names() + ["lda"] * 300
+            top_features = pd.DataFrame.from_records(
+                columns=['topic', 'top_words'],
+                data=[(
+                    cls,
+                    [cols[i] for i in np.argpartition(coefs, -num_top_features)[-num_top_features:]]
+                ) for cls, coefs in zip(cat_key, clf.coef_[:len(clf.classes_)])]
+            )
+            for row in top_features.values:
+                self.top_words[cat_key] = row[1]
+                print("Topic: ", cat_key)
+                print("Values: ", row[1])
+                print("-----------------------------------------------")
+
+            self.models[cat_key] = clf
+            self.vectorizers[cat_key] = vectorizer
+
+            # self.lda_models[cat_key] = lda_model
+
+    def predict(self, text, threshold=0.66):
+        res_react = np.array([])
+        for cat_key, cat_vals in self.categories.items():
+            model = self.models[cat_key]
+            vectorizer = self.vectorizers[cat_key]
+            # lda_model = self.lda_models[cat_key]
+
+            df = pd.DataFrame([text], columns=['text'])
+            words = extract_words(df, self.words)
+            pp = pre_process_df(df)
+            pp_text = np.array([p[0] for p in pp])
+            siz = pp_text.shape[0]
+            pp_min = np.array([p[1] for p in pp]).reshape(siz, 1)
+            pp_max = np.array([p[2] for p in pp]).reshape(siz, 1)
+            X_test = vectorizer.transform(pp_text, copy=True)
+            # X_test = with_topics(X_test, lda_model)
+            X_test = np.hstack((words, pp_min, pp_max, X_test.toarray()))
+
+            pred_pr = model.predict_proba(X_test)
+            if pred_pr[0][0] > threshold:
+                react = ':' + random.choice(cat_vals) + ':'
+                res_react = np.append(res_react, react)
+
+        if len(res_react) == 0:
+            return [random.choice(self.thinking_cats)]
+
+        return res_react
+
+
+if __name__ == '__main__':
+    rp = ReactionPredictor()
+    rp.fit()
+    pickle.dump(rp, open("reaction_predictor.p", "wb"))
+    str = "Мопед мой. Т.к. команда расширяется и мне добавляется менеджерских скиллов, ко мне в команду в Physician Partners https://www.linkedin.com/company/physician-partners, где я сейчас удаленно работаю, требуется *Middle / Senior Data scientist*  *О компании:* Компания занимается медстраховками в округе Нью-Йорк. Один наш экс-соотечественник ведёт для них проекты в области data science, то есть продаёт идеи по улучшению работы врачей и жизни пациентов. Наша задача помогать в этом. Я на проекте уже полгода, всё ОК *Место:* Полностью удаленная вакансия *Обязанности* Проект по медицинским данным. Нужно будет по истории заболеваний, анализов, назначений лекарств и прочему строить модели, которые будут помогать диагностировать новые болезни, прогнозировать попадание человека в госпиталь и т.д. Так же придется заниматься аналитикой, то есть строить графики, проверять гипотезы, делать небольшие презентации. Соотношение задач модели / аналитика примерно 70 / 30. В начале аналитики может быть побольше, т.к. надо убеждать бизнес в том, что проблема есть, что модель работает, приводить реальные примеры.  *Требования* · опыт работы не менее 2 лет в области Data Science, хорошее знакомство с классикой в виде стат. анализа деревьев, бустинга, кластеризации, начальные/средние знания по DL, т.к. в планах пробовать что-то поинтереснее xgboost, но без фанатизма; · личные проекты и соревнования как плюс к карме; · продвинутые знания Python, основных библиотек для работы с данными; · умение работать в Linux/Unix Shell; · отсутствие страха перед Git, Wiki, Jira и другими средствами командной работы; · Docker (модели заливаем на google cloud), нужно уметь презентовать модель в виде простого web сервиса типа Flask, чтобы доктора могли посмотреть; · опыт написания SQL запросов, нужно будет копаться в данных; · способность презентовать результаты своей работы."
+    print(rp.predict(str))

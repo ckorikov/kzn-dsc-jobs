@@ -24,7 +24,7 @@ def extract_category(cats, d):
     for c in cats:
         if c not in d:
             continue
-        if d[c] > 1:
+        if d[c] > 3:
             return 1
     return 0
 
@@ -47,7 +47,6 @@ def load_dataframe(cat_key, cat_vals):
 
     df[cat_key] = [extract_category(cat_vals, r) for r in reactions]
 
-    print('\n', 'num topics:', len(all_topics))
     pd.DataFrame(all_topics, columns=['topic name']).head(15)
 
     topics_binarized = np.array(df.values[:, 1:])
