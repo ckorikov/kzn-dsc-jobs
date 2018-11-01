@@ -33,7 +33,7 @@ rp = pickle.load( open( "reaction_predictor.p", "rb" ) )
 models = pickle.load( open( "models.p", "rb" ) )
 tfidfs = pickle.load( open( "tfidfs.p", "rb" ) )
 
-textgen = textgenrnn('./textgenrnn_weights.hdf5')
+textgen = textgenrnn(weights_path='textgenrnn_weights.hdf5', vocab_path='textgenrnn_vocab.json', config_path='textgenrnn_config.json')
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
