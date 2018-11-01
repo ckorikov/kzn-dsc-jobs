@@ -54,6 +54,8 @@ def echo(bot, update):
     for react in reacts:
         update.message.reply_text(react)
 
+    update.message.reply_text(update.message.text)
+
 def process_text(text):
     formatted_text = perform_transformation(text)
     prob = []
