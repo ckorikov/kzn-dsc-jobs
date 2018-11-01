@@ -9,6 +9,7 @@ stop_words_ru = stopwords.words('russian')
 
 stop_words_eng = stopwords.words('english')
 
+
 def topic_list_from_binarized(binarized, topics):
     return [topic for (has, topic) in zip(binarized, topics) if has == 1]
 
@@ -123,6 +124,25 @@ def pre_process_both(df_train, df_test):
     return pp_train, pp_test
 
 
+def vectorize_tr(pp_train):
+    vectorizer = TfidfVectorizer(
+        sublinear_tf=False,
+        strip_accents='unicode',
+        analyzer='word',
+        token_pattern=r'\w{2,}',
+        ngram_range=(1, 2),
+        max_features=1510,
+        max_df=0.7,
+        norm=None
+    )
+
+    vectorizer.fit(pp_train)
+
+    X_train = vectorizer.transform(pp_train, copy=True)
+    return X_train, vectorizer
+
+
+
 def vectorize(pp_train, pp_test):
     vectorizer = TfidfVectorizer(
         sublinear_tf=False,
@@ -161,6 +181,20 @@ def with_topics(X, lda):
     return sparse.hstack((X, X_topics)).A
 
 
+def add_lda_train(X_train, vectorizer):
+    id2word = {v: k for k, v in vectorizer.vocabulary_.items()}
+    X_train_gensim = sklearn2gensim(X_train)
+    lda = gensim.models.ldamodel.LdaModel(
+        corpus=X_train_gensim,
+        id2word=id2word,
+        num_topics=57,
+        per_word_topics=True
+    )
+
+    X_train_with_topics = with_topics(X_train, lda)
+    return X_train_with_topics, lda
+
+
 def add_lda(X_train, X_test, vectorizer):
     id2word = {v: k for k, v in vectorizer.vocabulary_.items()}
     X_train_gensim = sklearn2gensim(X_train)
@@ -187,6 +221,7 @@ def extract_words(df, words):
     for word in words:
         df[word] = df.text.apply(lambda s: contains_word(s, word))
     return df[words].values
+
 
 def pre_process_lite(string):
     s = lower_case(string)
