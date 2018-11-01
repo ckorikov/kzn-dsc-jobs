@@ -103,7 +103,16 @@ class ReactionPredictor:
         'money': ['moneybag', 'moneys', 'money_mouth_face']
     }
 
-    thinking_cats = [':thinking_face:', ':thinking_alot:', ':confusedparrot:']
+    cat_reply = {
+        'fork': ['fork.png', 'ban.png'],
+        'fire': ['fire.png', 'not-bad.png', 'thumbs-up.png'],
+        'eww': ['facepalm.png', 'noup.png'],
+        'galera': ['galera.png'],
+        'corporate': ['sberbank.png', 'venheads.png', 'putin.png'],
+        'money': ['money.png', 'moneybag.png'],
+    }
+
+    thinking_cats = ['thinking.png', 'thinking-parrot.png']
 
     words = ['вилк', 'зарплат', 'fork', 'money', 'деньг', 'sber', 'сбер', 'tinkoff', 'тиньк', 'X5',
              'retail', 'group', 'mail', 'больш', 'данн', 'big', 'data', 'middle', 'миддл', 'джун', 'juniо',
@@ -161,7 +170,7 @@ class ReactionPredictor:
 
             # self.lda_models[cat_key] = lda_model
 
-    def predict(self, text, threshold=0.66):
+    def predict(self, text, threshold=0.7):
         res_react = np.array([])
         for cat_key, cat_vals in self.categories.items():
             model = self.models[cat_key]
@@ -181,7 +190,7 @@ class ReactionPredictor:
 
             pred_pr = model.predict_proba(X_test)
             if pred_pr[0][0] > threshold:
-                react = ':' + random.choice(cat_vals) + ':'
+                react = random.choice(self.cat_reply[cat_key])
                 res_react = np.append(res_react, react)
 
         if len(res_react) == 0:

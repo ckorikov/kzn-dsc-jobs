@@ -50,7 +50,6 @@ def help(bot, update):
 def echo(bot, update):
     """Echo the user message."""
     # update.message.reply_text(update.message.text)
-    print(update.message.text)
     if process_text(update.message.text):
         update.message.reply_text('👎')
     else:
@@ -58,7 +57,7 @@ def echo(bot, update):
 
     reacts = rp.predict(update.message.text)
     for react in reacts:
-        update.message.reply_text(react)
+        bot.send_photo(chat_id=update.message.chat_id, photo=open('img/' + str(react), 'rb'))
 
     update.message.reply_text(textgen.generate(prefix=update.message.text[:10]))
 
