@@ -44,7 +44,6 @@ def help(bot, update):
 def echo(bot, update):
     """Echo the user message."""
     # update.message.reply_text(update.message.text)
-    print(update.message.text)
     if process_text(update.message.text):
         update.message.reply_text('👎')
     else:
@@ -52,9 +51,7 @@ def echo(bot, update):
 
     reacts = rp.predict(update.message.text)
     for react in reacts:
-        update.message.reply_text(react)
-
-    update.message.reply_text(update.message.text)
+        bot.send_photo(chat_id=update.message.chat_id, photo=open('img/thinking.png', 'rb'))
 
 def process_text(text):
     formatted_text = perform_transformation(text)
