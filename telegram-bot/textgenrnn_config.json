@@ -1,1 +1,1 @@
-{"rnn_layers": 4, "rnn_size": 128, "rnn_bidirectional": false, "max_length": 10, "max_words": 100000, "dim_embeddings": 300, "word_level": false, "single_text": true, "name": "textgenrnn", "max_gen_length": 500}
+{"rnn_layers": 2, "rnn_size": 128, "rnn_bidirectional": false, "max_length": 10, "max_words": 100000, "dim_embeddings": 100, "word_level": false, "single_text": true, "name": "textgenrnn", "max_gen_length": 500}
