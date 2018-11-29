@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  bot:
+    container_name: kzn-dsc-jobs
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "4458:4458"
