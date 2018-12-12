@@ -6,7 +6,6 @@ import os
 r_dict = {}
 
 
-
 def read_json(path):
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
@@ -21,18 +20,21 @@ def fill_r_dict(d):
 
 
 def extract_category(cats, d):
+    score = 0
+    total_score = np.sum(list(d.values()))
     for c in cats:
         if c not in d:
             continue
-        if d[c] > 3:
-            return 1
-    return 0
+        score = score + d[c]
+    return score/float(total_score)
+
 
 def topic_list_from_binarized(binarized, all_topics):
     return [topic for (has, topic) in zip(binarized, all_topics) if has == 1]
 
 
-def load_dataframe(cat_key, cat_vals):
+def load_dataframe(categories):
+    treshold = 0.25
     react_size = 50
     dataset = read_json('dataset.json')
     dataset = np.array(dataset)
@@ -44,15 +46,15 @@ def load_dataframe(cat_key, cat_vals):
     all_topics = [r[0] for r in reacts]
     df = pd.DataFrame()
     df['text'] = [d['text'] for d in dataset]
+    for cat_key, cat_vals in categories.items():
+        df[cat_key] = [int(extract_category(cat_vals, r) >= treshold) for r in reactions]
 
-    df[cat_key] = [extract_category(cat_vals, r) for r in reactions]
-
-    pd.DataFrame(all_topics, columns=['topic name']).head(15)
-
-    topics_binarized = np.array(df.values[:, 1:])
-    topic_lists = [topic_list_from_binarized(binarized, all_topics) for binarized in topics_binarized]
-    df = df[['text']]
-    df = df.assign(topic_list=topic_lists)
-    df = df.assign(topics_binarized=topics_binarized.tolist())
-    df = df.assign(num_topics=np.array([len(lst) for lst in topic_lists]))
+    #pd.DataFrame(all_topics, columns=['topic name']).head(15)
+#
+    #topics_binarized = np.array(df.values[:, 1:])
+    #topic_lists = [topic_list_from_binarized(binarized, all_topics) for binarized in topics_binarized]
+    #df = df[['text']]
+    #df = df.assign(topic_list=topic_lists)
+    #df = df.assign(topics_binarized=topics_binarized.tolist())
+    #df = df.assign(num_topics=np.array([len(lst) for lst in topic_lists]))
     return df

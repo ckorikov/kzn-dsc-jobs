@@ -3,6 +3,7 @@ from nltk.corpus import stopwords
 from nltk.stem.lancaster import *
 from nltk.stem.snowball import RussianStemmer, EnglishStemmer
 from scipy import sparse
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 stop_words_ru = stopwords.words('russian')
@@ -79,7 +80,7 @@ def extract_salary(string):
 
     if min > max:
         min = max
-    return min, max
+    return np.array([min, max])
 
 
 def replace_numeric_with_literal(string, literal='<num> '):
@@ -98,6 +99,10 @@ def lemmatize(string, lemmatizer, stop_words):
     return ' '.join([lemmatizer.lemmatize(word) for word in re.split(' ', string) if not word in stop_words])
 
 
+def extract_compensation(df):
+    return df.apply(lambda row: extract_salary(row['text']), axis=1).values
+
+
 def pre_process(string):
     s = lower_case(string)
     s = fix_lt(s)
@@ -105,13 +110,12 @@ def pre_process(string):
     s = remove_stop_words(s, stop_words_ru)
     s = remove_stop_words(s, stop_words_eng)
     s = compact_whitespace(s)
-    min, max = extract_salary(s)
     s = replace_numeric_with_literal(s)
     stemmer = RussianStemmer()
     s = stem(s, stemmer, stop_words_ru)
     stemmer = EnglishStemmer()
     s = stem(s, stemmer, stop_words_eng)
-    return [s.strip(), min, max]
+    return s.strip()
 
 
 def pre_process_df(df):
