@@ -6,21 +6,21 @@ import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 import logging
-import re
-import numpy as np
-import pickle
-import string
+# import re
+# import numpy as np
+# import pickle
+# import string
 
-from nltk.stem.snowball import EnglishStemmer, RussianStemmer
-from nltk.corpus import stopwords
+# from nltk.stem.snowball import EnglishStemmer, RussianStemmer
+# from nltk.corpus import stopwords
 
-from textgenrnn import textgenrnn
+# from textgenrnn import textgenrnn
 
-from app import ReactionPredictor
+# from app import ReactionPredictor
 
 
-ru_stemmer = RussianStemmer()
-eng_stemmer = EnglishStemmer()
+# ru_stemmer = RussianStemmer()
+# eng_stemmer = EnglishStemmer()
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -29,11 +29,11 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-rp = pickle.load( open( "reaction_predictor.p", "rb" ) )
-models = pickle.load( open( "models.p", "rb" ) )
-tfidfs = pickle.load( open( "tfidfs.p", "rb" ) )
+# rp = pickle.load( open( "reaction_predictor.p", "rb" ) )
+# models = pickle.load( open( "models.p", "rb" ) )
+# tfidfs = pickle.load( open( "tfidfs.p", "rb" ) )
 
-textgen = textgenrnn(weights_path='textgenrnn_weights.hdf5', vocab_path='textgenrnn_vocab.json', config_path='textgenrnn_config.json')
+# textgen = textgenrnn(weights_path='textgenrnn_weights.hdf5', vocab_path='textgenrnn_vocab.json', config_path='textgenrnn_config.json')
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
@@ -49,37 +49,37 @@ def help(bot, update):
 
 def echo(bot, update):
     """Echo the user message."""
-    # update.message.reply_text(update.message.text)
-    if process_text(update.message.text):
-        update.message.reply_text('👎')
-    else:
-        update.message.reply_text('👍')
+    update.message.reply_text(update.message.text)
+    # if process_text(update.message.text):
+    #     update.message.reply_text('👎')
+    # else:
+    #     update.message.reply_text('👍')
 
-    reacts = rp.predict(update.message.text)
-    for react in reacts:
-        bot.send_photo(chat_id=update.message.chat_id, photo=open('img/' + str(react), 'rb'))
+    # reacts = rp.predict(update.message.text)
+    # for react in reacts:
+    #     bot.send_photo(chat_id=update.message.chat_id, photo=open('img/' + str(react), 'rb'))
 
-    update.message.reply_text(textgen.generate(prefix=update.message.text[:10]))
+    # update.message.reply_text(textgen.generate(prefix=update.message.text[:10]))
 
-def process_text(text):
-    formatted_text = perform_transformation(text)
-    prob = []
-    for model, tfidf in zip(models, tfidfs):
-        features = tfidf.transform([formatted_text])
-        prob.append(model.predict(features))
+# def process_text(text):
+#     formatted_text = perform_transformation(text)
+#     prob = []
+#     for model, tfidf in zip(models, tfidfs):
+#         features = tfidf.transform([formatted_text])
+#         prob.append(model.predict(features))
         
-    return (np.mean(prob) > 0.5)
+#     return (np.mean(prob) > 0.5)
 
-def perform_transformation(text):
-    text = text.lower()
-    translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
-    text = text.translate(translator)
-    words_without_punctuation = text.split()
-    # 3. Stem words
-    stemmed_words = [eng_stemmer.stem(ru_stemmer.stem(word)) for word in words_without_punctuation]
-    filtered_words = [word for word in stemmed_words if word not in stopwords.words('russian')]
+# def perform_transformation(text):
+#     text = text.lower()
+#     translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
+#     text = text.translate(translator)
+#     words_without_punctuation = text.split()
+#     # 3. Stem words
+#     stemmed_words = [eng_stemmer.stem(ru_stemmer.stem(word)) for word in words_without_punctuation]
+#     filtered_words = [word for word in stemmed_words if word not in stopwords.words('russian')]
 
-    return ' '.join(filtered_words)
+    # return ' '.join(filtered_words)
 
 def error(bot, update, error):
     """Log Errors caused by Updates."""
@@ -88,6 +88,11 @@ def error(bot, update, error):
 
 def main():
     token = sys.argv[1] if len(sys.argv) > 1 else None
+    
+    if not token:
+        print("No token")
+        exit(1)
+
     # Create the EventHandler and pass it your bot's token.
     updater = Updater(token)
 

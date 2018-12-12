@@ -1,10 +1,14 @@
-FROM python:3
+FROM python:3.6.7
+
+RUN pip install pipenv
 
 WORKDIR /app
 
-COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+ADD Pipfile ./
+ADD Pipfile.lock ./
+RUN set -ex && pipenv install --deploy --system
 
-COPY . /app/
+ADD telegram-bot /app/telegram-bot
 
-CMD python telegram-bot/bot.py
+ENV key None
+ENTRYPOINT ["/bin/bash", "-c", "python telegram-bot/bot.py $key"]
